@@ -2,22 +2,43 @@ import os
 import unittest
 
 from test.root_test import RootTestCase
-from taskserver.task_manager import TaskManager, Task
+from taskserver.task_manager import TaskManager, Task, TaskFromFileLoadingError,\
+    TaskFromJsonLoadingError
+import json
 
 
 class TaskTestCase(RootTestCase):
-    c_dir = os.path.dirname(__file__)
-    t_dir = os.path.join(c_dir, 'tasks', 'to_proc')
-
-    def test_task_init(self):
-        t_name = 'one'
-        t = Task(self.t_dir, t_name)
-        exp_hash = '9893532233caff98cd083a116b013c0b'
+    def test_from_file(self):
+        c_dir = os.path.dirname(__file__)
+        tasks_dir = os.path.join(c_dir, 'tasks', 'to_proc')
+        task_name = 'one'
+        t = Task.from_file(tasks_dir, task_name)
         exp_content = 'some content'
-        self.assertEquals(t_name, t.name)
-        self.assertEquals(self.t_dir, t.t_dir)
-        self.assertEquals(exp_hash, t.hash)
+        self.assertEquals(task_name, t.name)
         self.assertEquals(exp_content, t.content)
+        self.assertEquals(None, t.result)
+
+    def test_from_file_loading_error(self):
+        c_dir = os.path.dirname(__file__)
+        tasks_dir = os.path.join(c_dir, 'tasks', 'to_proc')
+        task_name = 'fake'
+        self.assertRaises(TaskFromFileLoadingError, Task.from_file, tasks_dir, task_name)
+
+    def test_from_json(self):
+        name = 'a'
+        content = 'cccdd o'
+        result = 'res'
+        json_task = json.dumps({'name': name, 'content': content,
+            'result': result})
+        t = Task.from_json(json_task)
+        self.assertEquals(name, t.name)
+        self.assertEquals(content, t.content)
+        self.assertEquals(result, t.result)
+
+    def test_from_json_loading_error(self):
+        self.assertRaises(TaskFromJsonLoadingError, Task.from_json, 'na: 44')
+        raw_task = json.dumps({'no': 'fields'})
+        self.assertRaises(TaskFromJsonLoadingError, Task.from_json, raw_task)
 
 
 class TaskManagerTestCase(RootTestCase):

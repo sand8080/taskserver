@@ -1,27 +1,49 @@
 import os
-import hashlib
 import json
 
 
-class NoTasksToProcess(Exception):
+class TaskException(Exception):
+    pass
+
+
+class NoTasksToProcess(TaskException):
+    pass
+
+
+class TaskFromJsonLoadingError(TaskException):
+    pass
+
+
+class TaskFromFileLoadingError(TaskException):
     pass
 
 
 class Task:
-    def __init__(self, tasks_dir, task_name):
-        self.name = task_name
-        self.t_dir = tasks_dir
-        self.hash, self.content = self._load_task()
-
-    def _load_task(self):
-        with open(os.path.join(self.t_dir, self.name)) as f:
-            content = f.read()
-            md5 = hashlib.md5(content)
-            return md5.hexdigest(), content
+    def __init__(self, name, content=None, result=None):
+        self.name = name
+        self.content = content
+        self.result = result
 
     def as_json(self):
-        return json.dumps({'name': self.name, 'hash': self.hash,
-            'content': self.content})
+        return json.dumps({'name': self.name, 'content': self.content})
+
+    @staticmethod
+    def from_file(tasks_dir, task_name):
+        try:
+            with open(os.path.join(tasks_dir, task_name)) as f:
+                content = f.read()
+                return Task(task_name, content=content)
+        except Exception:
+            raise TaskFromFileLoadingError
+
+    @staticmethod
+    def from_json(raw_task):
+        try:
+            data = json.loads(raw_task)
+            return Task(data['name'], content=data['content'],
+                result=data['result'])
+        except Exception:
+            raise TaskFromJsonLoadingError
 
 
 class TaskManager:
@@ -68,3 +90,4 @@ class TaskManager:
         Task(self.t_dir, t_name)
 
     def receive_task(self):
+        pass
