@@ -1,8 +1,27 @@
 import os
+import hashlib
+import json
 
 
 class NoTasksToProcess(Exception):
     pass
+
+
+class Task:
+    def __init__(self, tasks_dir, task_name):
+        self.name = task_name
+        self.t_dir = tasks_dir
+        self.hash, self.content = self._load_task()
+
+    def _load_task(self):
+        with open(os.path.join(self.t_dir, self.name)) as f:
+            content = f.read()
+            md5 = hashlib.md5(content)
+            return md5.hexdigest(), content
+
+    def as_json(self):
+        return json.dumps({'name': self.name, 'hash': self.hash,
+            'content': self.content})
 
 
 class TaskManager:
@@ -27,6 +46,10 @@ class TaskManager:
         return tasks - proc_tasks
 
     def next_task_name(self):
+        '''
+        gets task name to process
+        if no tasks in self.tasks swapping self.tasks with self.tasks_in_process
+        '''
         if len(self.tasks)==0:
             self.tasks = self.tasks_in_process
             self.tasks_in_process = set()
@@ -37,7 +60,11 @@ class TaskManager:
         except KeyError:
             raise NoTasksToProcess
 
+    def next_task(self):
+        '''
+        returns next Task to process
+        '''
+        t_name = self.next_task_name()
+        Task(self.t_dir, t_name)
 
-    def get_task(self):
-        pass
-        pass
+    def receive_task(self):

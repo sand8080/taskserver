@@ -2,8 +2,22 @@ import os
 import unittest
 
 from test.root_test import RootTestCase
-#from taskserver import load_tasks
-from taskserver.task_manager import TaskManager
+from taskserver.task_manager import TaskManager, Task
+
+
+class TaskTestCase(RootTestCase):
+    c_dir = os.path.dirname(__file__)
+    t_dir = os.path.join(c_dir, 'tasks', 'to_proc')
+
+    def test_task_init(self):
+        t_name = 'one'
+        t = Task(self.t_dir, t_name)
+        exp_hash = '9893532233caff98cd083a116b013c0b'
+        exp_content = 'some content'
+        self.assertEquals(t_name, t.name)
+        self.assertEquals(self.t_dir, t.t_dir)
+        self.assertEquals(exp_hash, t.hash)
+        self.assertEquals(exp_content, t.content)
 
 
 class TaskManagerTestCase(RootTestCase):
