@@ -73,6 +73,33 @@ class TaskManagerTestCase(RootTestCase):
         self.assertTrue(t_name in tm.tasks_in_process)
         self.assertTrue(t_name not in tm.tasks)
 
+    def test_next_task_removed_file(self):
+        # cleaning tasks_dirs
+        tasks_dir = os.path.join(self.c_dir, 'test_next_task_removed_file')
+        to_proc_dir = os.path.join(tasks_dir, 'to_proc')
+        ready_dir = os.path.join(tasks_dir, 'ready')
+        shutil.rmtree(tasks_dir, ignore_errors=True)
+
+        # creating tasks
+        os.makedirs(to_proc_dir)
+        os.makedirs(ready_dir)
+        task_name = '101'
+        with open(os.path.join(to_proc_dir, task_name), 'w') as f:
+            f.write('one\n')
+            f.write('two\n')
+        tm = TaskManager(to_proc_dir, ready_dir)
+        self.assertTrue(task_name in os.listdir(to_proc_dir))
+        self.assertTrue(task_name not in os.listdir(ready_dir))
+        tm.next_task()
+
+        # cleaning tasks_dirs
+        shutil.rmtree(tasks_dir, ignore_errors=True)
+
+        # checking task removed from tasks sets
+        self.assertRaises(TaskFromFileLoadingError, tm.next_task)
+        self.assertTrue(task_name not in tm.tasks)
+        self.assertTrue(task_name not in tm.tasks_in_process)
+
     def test_receive_task(self):
         # cleaning tasks_dirs
         tasks_dir = os.path.join(self.c_dir, 'test_receive_task')

@@ -3,7 +3,8 @@ import json
 from taskserver import settings
 from taskserver.task_manager import TaskManager, Task
 from taskserver.errors import NoTasksToProcess, TaskFromJsonLoadingError,\
-    UnknownTaskReceived, ResultTaskContentMismatch, SavingResultTaskError
+    UnknownTaskReceived, ResultTaskContentMismatch, SavingResultTaskError,\
+    TaskFromFileLoadingError
 
 
 tm = TaskManager(settings.tasks_dir, settings.ready_tasks_dir)
@@ -19,6 +20,8 @@ def get_task(tm, env):
         result = task.as_json()
     except NoTasksToProcess:
         result = {'action': 'exit_client', 'reason': 'no tasks to process'}
+    except TaskFromFileLoadingError:
+        result = {'action': 'get_task'}
     return result
 
 

@@ -90,7 +90,14 @@ class TaskManager:
         returns next Task to process
         '''
         t_name = self.next_task_name()
-        return Task.from_file(self.tasks_dir, t_name)
+        try:
+            return Task.from_file(self.tasks_dir, t_name)
+        except TaskFromFileLoadingError, e:
+            self.l.error('Task "%s" in tasks to proc, but not in file system')
+            self.tasks.discard(t_name)
+            self.tasks_in_process.discard(t_name)
+            self.l.info('Removed task "%s" discarded in tasks set to proc')
+            raise e
 
     def receive_task(self, task):
         self.l.debug('Task "%s" received', task.name)
