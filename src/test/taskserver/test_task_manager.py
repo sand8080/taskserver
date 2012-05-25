@@ -1,11 +1,12 @@
 import os
 import json
 import unittest
+import shutil
 
 from test.root_test import RootTestCase
 from taskserver.task_manager import TaskManager, Task, TaskFromFileLoadingError,\
     TaskFromJsonLoadingError
-import shutil
+from taskserver.errors import UnknownTaskReceived, ResultTaskContentMismatch
 
 
 class TaskTestCase(RootTestCase):
@@ -74,7 +75,7 @@ class TaskManagerTestCase(RootTestCase):
 
     def test_receive_task(self):
         # cleaning tasks_dirs
-        tasks_dir = os.path.join(self.c_dir, 'test_receive_tasks')
+        tasks_dir = os.path.join(self.c_dir, 'test_receive_task')
         to_proc_dir = os.path.join(tasks_dir, 'to_proc')
         ready_dir = os.path.join(tasks_dir, 'ready')
         shutil.rmtree(tasks_dir, ignore_errors=True)
@@ -92,7 +93,6 @@ class TaskManagerTestCase(RootTestCase):
         task = tm.next_task()
         self.assertEquals(1, len(tm.tasks_in_process))
         task.result = 'ready'
-#        print '###', task
         tm.receive_task(task)
         self.assertTrue(task_name in os.listdir(to_proc_dir))
         self.assertTrue(task_name in os.listdir(ready_dir))
@@ -108,6 +108,35 @@ class TaskManagerTestCase(RootTestCase):
         self.assertEquals(0, len(tm.tasks_in_process))
         with open(os.path.join(ready_dir, task_name)) as f:
             self.assertEquals(task.result, f.read())
+
+        # cleaning tasks_dirs
+        shutil.rmtree(tasks_dir, ignore_errors=True)
+
+    def test_receive_task_failure(self):
+        # cleaning tasks_dirs
+        tasks_dir = os.path.join(self.c_dir, 'test_receive_task_failure')
+        to_proc_dir = os.path.join(tasks_dir, 'to_proc')
+        ready_dir = os.path.join(tasks_dir, 'ready')
+        shutil.rmtree(tasks_dir, ignore_errors=True)
+        # creating tasks
+        os.makedirs(to_proc_dir)
+        os.makedirs(ready_dir)
+        task_name = '100'
+        with open(os.path.join(to_proc_dir, task_name), 'w') as f:
+            f.write('one\n')
+            f.write('two\n')
+        # testing task receive
+        tm = TaskManager(to_proc_dir, ready_dir)
+        self.assertTrue(task_name in os.listdir(to_proc_dir))
+        self.assertTrue(task_name not in os.listdir(ready_dir))
+
+        fake_task = Task('fake')
+        self.assertRaises(UnknownTaskReceived, tm.receive_task, fake_task)
+
+        wrong_content_task = Task.from_file(to_proc_dir, task_name)
+        wrong_content_task.content = 'fake_%s' % wrong_content_task.content
+        self.assertRaises(ResultTaskContentMismatch, tm.receive_task,
+            wrong_content_task)
 
         # cleaning tasks_dirs
         shutil.rmtree(tasks_dir, ignore_errors=True)
