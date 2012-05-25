@@ -54,6 +54,15 @@ class TaskManagerTestCase(RootTestCase):
         act_tasks = tm._tasks_to_proc()
         self.assertEquals(exp_tasks, act_tasks)
 
+    def test_reload_tasks(self):
+        tm = TaskManager(self.tasks_dir, self.r_t_dir)
+        tm.tasks = set()
+        tm.tasks_in_process = set()
+        tm.reload_tasks()
+        exp_tasks = set(['1', 'one'])
+        act_tasks = tm._tasks_to_proc()
+        self.assertEquals(exp_tasks, act_tasks)
+
     def test_next_task_name(self):
         tm = TaskManager(self.tasks_dir, self.r_t_dir)
         tasks_num = len(tm.tasks)

@@ -14,6 +14,11 @@ def unknown_action(_, __):
     return {'action': 'exit_client', 'reason': 'unknown_action'}
 
 
+def reload_tasks(tm, _):
+    tm.reload_tasks()
+    return stat(tm, _)
+
+
 def get_task(tm, env):
     try:
         task = tm.next_task()
@@ -49,7 +54,8 @@ def get_action(env):
     uri = uri.strip('/')
     p_uri = uri.split('/')
     a = p_uri[0]
-    actions = {'get_task': get_task, 'receive_task': receive_task, 'stat': stat}
+    actions = {'get_task': get_task, 'receive_task': receive_task, 'stat': stat,
+        'reload_tasks': reload_tasks}
     return actions.get(a, unknown_action)
 
 

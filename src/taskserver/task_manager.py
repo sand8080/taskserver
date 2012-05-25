@@ -47,11 +47,17 @@ class TaskManager:
     def __init__(self, tasks_dir, processed_tasks_dir):
         self.tasks_dir = tasks_dir
         self.processed_tasks_dir = processed_tasks_dir
-        self.tasks = self._tasks_to_proc()
+        self.tasks = set()
         self.tasks_in_process = set()
+        self.reload_tasks()
         self.l = init_logger('taskmanager', settings.tm_log_file,
             settings.tm_log_level)
         self.l.info('Task manager initiated: %s', self)
+
+    def reload_tasks(self):
+        self.tasks = self._tasks_to_proc()
+        self.tasks_in_process = set()
+
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.__dict__)
