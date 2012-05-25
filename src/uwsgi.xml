@@ -1,0 +1,7 @@
+<uwsgi>
+    <http>127.0.0.1:11233</http>
+    <pythonpath>.</pythonpath>
+    <touch-reload>uwsgi.xml</touch-reload>
+    <workers>1</workers>
+    <module>taskserver.application</module>
+</uwsgi>
