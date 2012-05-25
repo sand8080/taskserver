@@ -3,6 +3,8 @@ import json
 from taskserver.errors import TaskFromFileLoadingError, TaskFromJsonLoadingError,\
     NoTasksToProcess, UnknownTaskReceived, ResultTaskContentMismatch,\
     SavingResultTaskError
+from taskserver.log import init_logger
+from taskserver import settings
 
 
 class Task:
@@ -15,7 +17,7 @@ class Task:
         return json.dumps({'name': self.name, 'content': self.content})
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__, self.__dict__)
+        return "%s(%r)" % (self.__class__.__name__, self.__dict__)
 
     @staticmethod
     def from_file(tasks_dir, task_name):
@@ -42,6 +44,12 @@ class TaskManager:
         self.processed_tasks_dir = processed_tasks_dir
         self.tasks = self._tasks_to_proc()
         self.tasks_in_process = set()
+        self.l = init_logger('taskmanager', settings.tm_log_file,
+            settings.tm_log_level)
+        self.l.info('Task manager initiated: %s', self)
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self.__dict__)
 
     def _tasks_to_proc(self):
         '''
@@ -62,14 +70,19 @@ class TaskManager:
         gets task name to process
         if no tasks in self.tasks swapping self.tasks with self.tasks_in_process
         '''
-        if len(self.tasks)==0:
+        self.l.debug('Fetching next task name')
+        if len(self.tasks) == 0:
+            self.l.info('Moving tasks in progress to tasks set')
             self.tasks = self.tasks_in_process
             self.tasks_in_process = set()
         try:
             task = self.tasks.pop()
+            self.l.debug('Task "%s" is in process', task)
             self.tasks_in_process.add(task)
+            self.l.debug('Got task "%s" to process', task)
             return task
         except KeyError:
+            self.l.debug('No tasks to process')
             raise NoTasksToProcess
 
     def next_task(self):
@@ -80,19 +93,26 @@ class TaskManager:
         return Task.from_file(self.tasks_dir, t_name)
 
     def receive_task(self, task):
+        self.l.debug('Task "%s" received', task.name)
         try:
             task_origin = Task.from_file(self.tasks_dir, task.name)
         except TaskFromFileLoadingError:
+            self.l.error('Task "%s" is not found in "%s"', task.name, self.tasks_dir)
             raise UnknownTaskReceived
 
         if task_origin.content != task.content:
+            self.l.error('Task "%s" with wrong content', task.name)
             raise ResultTaskContentMismatch
 
         try:
+            self.l.debug('Saving task "%s"', task.name)
             with open(os.path.join(self.processed_tasks_dir, task.name), 'w') as f:
                 f.write(task.result)
 
+            self.l.debug('Removing task "%s" from tasks lists', task.name)
             self.tasks.discard(task.name)
             self.tasks_in_process.discard(task.name)
+            self.l.debug('Task "%s" processed')
         except Exception:
+            self.l.error('Task "%s" saving error', task.name)
             raise SavingResultTaskError
