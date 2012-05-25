@@ -16,6 +16,11 @@ class Task:
     def as_json(self):
         return json.dumps({'name': self.name, 'content': self.content})
 
+    def as_dict(self):
+        d = dict(self.__dict__)
+        d.pop('result', None)
+        return d
+
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.__dict__)
 

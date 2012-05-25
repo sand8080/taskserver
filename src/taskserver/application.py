@@ -17,7 +17,8 @@ def unknown_action(_, __):
 def get_task(tm, env):
     try:
         task = tm.next_task()
-        result = task.as_json()
+        result = {'action': 'process_task', 'task': task.as_dict()}
+
     except NoTasksToProcess:
         result = {'action': 'exit_client', 'reason': 'no tasks to process'}
     except TaskFromFileLoadingError:
