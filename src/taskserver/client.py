@@ -4,12 +4,14 @@ import time
 
 
 def get_task(server_url):
+    print '### getting task'
     f = urllib2.urlopen('%s/get_task' % server_url)
     raw_task = f.read()
     return json.loads(raw_task)
 
 
 def receive_task(server_url, task):
+    print '### receiveing task', task
     f = urllib2.urlopen('%s/receive_task' % server_url, data=json.dumps(task))
     raw_task = f.read()
     return json.loads(raw_task)
@@ -28,7 +30,7 @@ def check_action(task):
     if action == 'exit_client':
         print '### exiting client:', task['reason']
         raise StopProcessing
-    elif action == 'next_task':
+    elif action == 'get_task':
         print '### getting next task'
         raise NextTask
     elif action == 'process_task':
@@ -39,8 +41,9 @@ def check_action(task):
 
 
 def process_task(task):
-    result = dict(task)
+    result = dict(task['task'])
     result['result'] = 'ok'
+    return result
 
 
 if __name__ == '__main__':
@@ -49,7 +52,6 @@ if __name__ == '__main__':
     print '### processing started'
     while(True):
         try:
-            print '### getting task'
             task = get_task(server_url)
             check_action(task)
 
